@@ -201,7 +201,12 @@ Text marshalling is also supported via `MarshalText` and `UnmarshalText`.
 | sub  | 100, 0                               | 24.18          | 0             | 0                  |
 | mul  | 100, 0                               | 20.87          | 0             | 0                  |
 
-
+Test run on
+```
+goos: darwin
+goarch: amd64
+cpu: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz
+```
 ---
 
 ## 📜 License

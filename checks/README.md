@@ -52,6 +52,13 @@ The following metric
 | div | 1, 2                                         | 271.0         | 151.6         | 184           | 0             | 7                   | 0                   |
 | div | 9999999.9999999999, -9999999.9999999999      | 391.0         | 127.5         | 264           | 0             | 9                   | 0                   |
  
+Test run on
+```
+goos: darwin
+goarch: amd64
+cpu: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz
+```
+
 ---
 
 ## Contributor Request
