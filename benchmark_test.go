@@ -152,3 +152,54 @@ func BenchmarkFormat(bm *testing.B) {
 		fmt.Appendf(buf[:0], "%s", a)
 	}
 }
+
+type (
+	opFuncNumeric func(a, b Numeric) Numeric
+)
+
+func benchmarkNumericOp(b *testing.B, name, aStr, bStr string, op opFuncNumeric) {
+	a, err := FromString(aStr)
+	if err != nil {
+		b.Skip("invalid numeric input:", aStr)
+	}
+	bb, err := FromString(bStr)
+	if err != nil {
+		b.Skip("invalid numeric input:", bStr)
+	}
+
+	if name == "div" && bb.Cmp(Zero) == 0 {
+		b.Skip("division by zero")
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = op(a, bb)
+	}
+}
+
+func BenchmarkArithmeticOps(b *testing.B) {
+	inputs := []struct {
+		a, b string
+	}{
+		{"1", "2"},
+		{"123.456", "-654.321"},
+		{"9999999.9999999999", "-9999999.9999999999"},
+		{"0.0000000001", "0.0000000002"},
+		{"100", "0"}, // to test div zero handling
+	}
+
+	numericOps := map[string]opFuncNumeric{
+		"add": Numeric.Add,
+		"sub": Numeric.Sub,
+		"mul": Numeric.Mul,
+		"div": Numeric.Div,
+	}
+
+	for _, in := range inputs {
+		for name, op := range numericOps {
+			b.Run("Numeric/"+name+"/"+in.a+"_"+in.b, func(b *testing.B) {
+				benchmarkNumericOp(b, name, in.a, in.b, op)
+			})
+		}
+	}
+}

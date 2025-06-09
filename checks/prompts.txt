@@ -1,0 +1,25 @@
+Side by side comparison
+------------------------
+
+Given the output of go test -bench with -benchmem, parse each benchmark line. 
+Extract the benchmark name, operation (add, sub, mul, div), number type (Decimal or Numeric), 
+input values (e.g., 1, 2), and benchmark results: time per operation (ns/op), bytes allocated (B/op), and heap allocations (allocs/op).
+
+Group results by operation and input. 
+Present the result as a markdown table comparing Decimal vs Numeric side-by-side with columns:
+
+Op | Input A & B | Decimal ns/op | Numeric ns/op | Decimal B/op | Numeric B/op | Decimal allocs/op | Numeric allocs/op
+
+Numeric only 
+-------------
+
+Given the output of go test -bench with -benchmem, parse each benchmark line. 
+Extract the benchmark name, operation (add, sub, mul, div),  
+input values (e.g., 1, 2), and benchmark results: time per operation (ns/op), bytes allocated (B/op), and heap allocations (allocs/op).
+
+Group results by operation and input. 
+Present the result as a markdown table listing the results with columns:
+
+Op | Input A & B | Numeric ns/op| Numeric B/op | Numeric allocs/op
+
+Output the results in raw markdown.

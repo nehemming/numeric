@@ -11,9 +11,6 @@ on:
       - main
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   test:
     name: Run Tests and Lint
@@ -38,4 +35,28 @@ jobs:
         run: golangci-lint run ./...
 
       - name: Run Tests
+        run: go test ./...
+
+  checks:
+    name: Check Tests
+    runs-on: ubuntu-latest
+    needs: test
+    defaults:
+      run:
+        working-directory: checks
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+      - name: Run Linter on Checks
+        run: golangci-lint run ./...
+
+      - name: Run check tests
         run: go test ./...
