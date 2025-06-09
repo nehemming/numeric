@@ -71,8 +71,24 @@ func FromFloat64(f float64) Numeric {
 }
 
 // FromInt creates a Numeric from an int.
-func FromInt(i int) Numeric {
-	return Numeric{z: f24Int(int64(i))}
+func FromInt(i int64) Numeric {
+	return Numeric{z: f24Int(i)}
+}
+
+// ValidateIntRange checks if an int is within the valid range for Numeric.
+func ValidateIntRange(i int64) error {
+	if i > maxValueI || i < -maxValueI {
+		return fmt.Errorf("%w: %d", ErrIntegerOutOfRange, i)
+	}
+	return nil
+}
+
+// ValidateFloatRange checks if an int is within the valid range for Numeric.
+func ValidateFloatRange(i float64) error {
+	if i > maxValueF64 || i < -maxValueF64 {
+		return fmt.Errorf("%w: %f", ErrFloatOutOfRange, i)
+	}
+	return nil
 }
 
 // One returns a positive or negative 1
@@ -80,6 +96,13 @@ func One(isNeg bool) Numeric {
 	var f f24
 	f[1] = 1
 	f.setNeg(isNeg) // Set the sign based on isNeg
+	return Numeric{z: f}
+}
+
+// NaN returns a Numeric representing Not-a-Number (NaN).
+func NaN() Numeric {
+	var f f24
+	f.setNaN(true)
 	return Numeric{z: f}
 }
 
@@ -93,9 +116,9 @@ func FromString(s string) (Numeric, error) {
 }
 
 // Sum returns the sum of a variadic slice of Numerics.
-func Sum(nums ...Numeric) Numeric {
+func Sum(vals ...Numeric) Numeric {
 	var sum f24
-	for _, n := range nums {
+	for _, n := range vals {
 		var z f24
 		arith.add(&z, &sum, &n.z)
 		sum = z
@@ -121,12 +144,12 @@ func (n Numeric) Float64() float64 {
 
 // Int converts the Numeric to an int, discarding any fractional part.
 // NOTE!!: Overflows are masked to int range; no error is returned.
-func (n Numeric) Int() int {
+func (n Numeric) Int() int64 {
 	if n.z.isNaN() {
 		return 0
 	}
 	v := (uint64(n.z[0].val()) * radix) + uint64(n.z[1].val())
-	i := int(v & 0x7FFFFFFFFFFFFFFF)
+	i := int64(v & 0x7FFFFFFFFFFFFFFF)
 	if n.z.isNeg() {
 		return -i
 	}
@@ -221,7 +244,7 @@ func (n Numeric) HasOverflow() bool {
 	return n.z.isOverflow()
 }
 
-// HasUnderflow returns true if the number has underflowed.
+// HasUnderflow returns true if the number has underflow.
 func (n Numeric) HasUnderflow() bool {
 	if n.z.isNaN() {
 		return false
@@ -271,6 +294,11 @@ func (n Numeric) IsGreaterEqual(n2 Numeric) bool {
 //	1 if n > n2.
 func (n Numeric) Cmp(n2 Numeric) int {
 	return arith.compare(&n.z, &n2.z)
+}
+
+// IsUnderOverNaN returns true if the number is NaN, has overflow, or underflow.
+func (n *Numeric) IsUnderOverNaN() bool {
+	return arith.hasExceptionalState(&n.z)
 }
 
 // MarshalText implements encoding.TextMarshaler for text formats.

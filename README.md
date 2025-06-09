@@ -1,5 +1,10 @@
 # numeric
 
+[![Build](https://github.com/nehemming/numeric/actions/workflows/ci.yml/badge.svg)](https://github.com/nehemming/numeric/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/nehemming/numeric.svg)](https://pkg.go.dev/github.com/nehemming/numeric)
+[![codecov](https://codecov.io/gh/nehemming/numeric/branch/main/graph/badge.svg)](https://codecov.io/gh/nehemming/numeric)
+[![License](https://img.shields.io/github/license/nehemming/numeric.svg)](https://github.com/nehemming/numeric/blob/main/LICENSE)
+
 `numeric` is a high-performance Go package for fixed-precision decimal math with explicit handling of overflow, underflow, and inexact values. It is designed for scenarios where **precision**, **determinism**, and **performance** are critical—such as financial, scientific, or blockchain applications.
 
 ## ✨ Features

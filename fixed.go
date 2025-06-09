@@ -10,12 +10,12 @@ import (
 	"unsafe"
 )
 
-// const below are used to  provide consistent values
+// constants below are used to  provide consistent values
 // The constants should not be changed.  Many function use unrolled logic and
 // the values are essentially bound to the constants.
-
 const (
 	radix            = uint64(1e9) // radix is base 1e9
+	radixR2          = uint64(1e9) // radix is base^2 1e18
 	radixI           = int64(1e9)
 	radixHalfI       = int64(5e8)                 // radixHalfI is used for normalization pivoting
 	maxDigit         = 1e9 - 1                    // maxDigit largest single digit in the radix base
@@ -26,7 +26,9 @@ const (
 	radixDigits      = 9                          // base 10 digits in 1 radix unit.
 	maxDecimalPlaces = 4 * radixDigits            // maxDecimalPlaces number of decimal digits.
 	decMul           = uint64(1e8)                // decMul used in decimal conversions from strings.
-	maxValue         = uint64(1e18) - 1           // maxValue is the maximum integer value value that can be represented in f24
+	maxValue         = uint64(1e18) - 1           // maxValue is the maximum unsigned integer value that can be represented in f24
+	maxValueI        = int64(1e18) - 1            // maxValueI is the maximum integer value that can be represented in f24
+	maxValueF64      = float64(1e18 - 1e2)        // maxValueF64 is the maximum float64 value that can be represented in f24
 	lowIndex         = len(f24{}) - 1             // lowIndex is the index of the lowest fVal in f24
 	lenF24           = len(f24{})                 // lenF24 is the length of f24, which is 6
 	decIndex         = 2                          // decIndex is the index of the first decimal place in f24
@@ -79,6 +81,9 @@ var (
 
 	// ErrInvalidCharacter is returned when an invalid character is encountered in the input string.
 	ErrInvalidCharacter = errors.New("invalid character")
+
+	ErrIntegerOutOfRange = errors.New("integer value out of range for Numeric representation")
+	ErrFloatOutOfRange   = errors.New("float value out of range for Numeric representation")
 )
 
 var maxF24 = f24{
@@ -122,6 +127,8 @@ func f24Float64(v float64) f24 {
 	case math.IsInf(v, -1):
 		f = overflow(true)
 	case v == 0:
+	case v > maxValueF64 || v < -maxValueF64:
+		f = overflow(v < 0)
 	default:
 		var buf [24]byte
 		b := strconv.AppendFloat(buf[:0], v, 'g', -1, 64)
@@ -658,7 +665,7 @@ func (d *digits) setOverflow() {
 	}
 }
 
-// overflow is used by digits during oarsing to set a overflow max value.
+// overflow is used by digits during parsing to set a overflow max value.
 // in arith operations it is better to use its overflow function.
 func overflow(isNeg bool) f24 {
 	f := maxF24

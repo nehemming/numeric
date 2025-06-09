@@ -12,7 +12,7 @@ type (
 
 // arith functions are intended for internal calculation logic only.
 // They work with *f24 types in the form z = x op y where op is one of
-// add, sub, mul, div, etc.  Z is aloways assumed to be zero value prior to the operation.
+// add, sub, mul, div, etc.  Z is always assumed to be zero value prior to the operation.
 // The functions handle NaN, underflow, overflow, and sign as needed.
 var arith arithmetic
 
@@ -219,7 +219,7 @@ func (arithmetic) divInner(z, x, y *f24) {
 	}
 
 	// we have the values in num and den non zero at idx 1
-	// now if the first digit < radixHalf we need to normilize.
+	// now if the first digit < radixHalf we need to normalize.
 	if num[1] < radixHalfI {
 		if normalization := radixHalfI / (num[1] + 1); normalization != 0 {
 			_, np = num.mul(normalization)
@@ -287,8 +287,7 @@ func (arithmetic) divInner(z, x, y *f24) {
 				continue
 			}
 
-			// Attempt to move the digits left, if thereis carry we
-			// will handle it here too.
+			// Attempt to move the digits left, if there is carry we handle it here too.
 			num = rem
 			trimmed, _ := num.trimZero()
 			switch {

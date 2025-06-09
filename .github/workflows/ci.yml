@@ -35,7 +35,13 @@ jobs:
         run: golangci-lint run ./...
 
       - name: Run Tests
-        run: go test ./...
+        run: go test -coverprofile=coverage.out ./...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.out
+          token: ${{ secrets.CODECOV_TOKEN }} # Only required for private repos
 
   checks:
     name: Check Tests

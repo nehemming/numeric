@@ -154,7 +154,7 @@ func TestNumericInt_NaN(t *testing.T) {
 }
 
 func TestFromInt_DecimalTruncationVisible(t *testing.T) {
-	n := FromInt(int(1e18)) // Too large to fully store
+	n := FromInt(int64(1e18)) // Too large to fully store
 	s := n.String()
 	if s != "<999999999999999999.999999999999999999999999999999999999" {
 		t.Errorf("FromInt(1e18).String() = %s; wanted max value", s)
@@ -164,11 +164,11 @@ func TestFromInt_DecimalTruncationVisible(t *testing.T) {
 func TestFromInt_Int_OverflowMasking(t *testing.T) {
 	// Forcing overflow: max int64 is 9223372036854775807 (~9.2e18)
 	// These will wrap due to masking.
-	overflowCases := []int{
-		int(1e18),
-		int(-1e18),
-		int(1<<62 + 1),
-		int(-(1<<62 + 1)),
+	overflowCases := []int64{
+		int64(1e18),
+		int64(-1e18),
+		int64(1<<62 + 1),
+		int64(-(1<<62 + 1)),
 	}
 
 	for _, input := range overflowCases {
@@ -176,7 +176,7 @@ func TestFromInt_Int_OverflowMasking(t *testing.T) {
 		i := n.Int()
 		// Note: expected is just input masked into int
 
-		expectedP := 999999999999999999
+		expectedP := int64(999999999999999999)
 		expectedN := -expectedP
 
 		if input > 0 {
@@ -192,16 +192,16 @@ func TestFromInt_Int_OverflowMasking(t *testing.T) {
 }
 
 func TestFromInt_Int_RoundTrip(t *testing.T) {
-	cases := []int{
+	cases := []int64{
 		0,
 		1,
 		-1,
 		123456,
 		-987654,
-		int(1e9),
-		int(-1e9),
-		int(1e17), // getting near overflow range
-		int(-1e17),
+		int64(1e9),
+		int64(-1e9),
+		int64(1e17), // getting near overflow range
+		int64(-1e17),
 	}
 
 	for _, input := range cases {
@@ -291,16 +291,16 @@ func TestNumericSum(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run("Sum_"+tc.expected, func(t *testing.T) {
-			var nums []Numeric
+			var vals []Numeric
 			for _, str := range tc.inputs {
 				n, err := FromString(str)
 				if err != nil {
 					t.Fatalf("Invalid input %q: %v", str, err)
 				}
-				nums = append(nums, n)
+				vals = append(vals, n)
 			}
 
-			sum := Sum(nums...)
+			sum := Sum(vals...)
 			got := sum.String()
 
 			if got != tc.expected {
@@ -971,7 +971,7 @@ func TestNumericFlags(t *testing.T) {
 		{"9999999999999999999.999999999999999999999999999999999999", true, false, false},
 		{"-9999999999999999999.999999999999999999999999999999999999", true, false, false},
 
-		// Underflowed exact zero (implementation detail if zero with flag)
+		// Underflow exact zero (implementation detail if zero with flag)
 		{"~0.00000000000000000000000000000000000000000000000000000001", false, true, true},
 	}
 
@@ -1291,6 +1291,20 @@ func TestOneIsOne(t *testing.T) {
 	}
 }
 
+func TestNaN(t *testing.T) {
+	// Test that NaN is a valid Numeric representation of NaN
+	nan := NaN()
+	if !nan.IsNaN() {
+		t.Error("NaN() should be NaN")
+	}
+	if got := nan.String(); got != "NaN" {
+		t.Errorf("NaN() String() = %q, want 'NaN'", got)
+	}
+	if nan.Sign() != 0 {
+		t.Errorf("NaN() Sign() = %d, want 0", nan.Sign())
+	}
+}
+
 func TestOneIsMinusOne(t *testing.T) {
 	// Test that One is a valid Numeric representation of 1
 	one := One(true)
@@ -1302,5 +1316,84 @@ func TestOneIsMinusOne(t *testing.T) {
 	}
 	if got := one.String(); got != "-1" {
 		t.Errorf("One() String() = %q, want '1'", got)
+	}
+}
+
+func TestValidateIntRange(t *testing.T) {
+	type testCase struct {
+		value    int64
+		expectOK bool
+	}
+
+	tests := []testCase{
+		{0, true},
+		{1, true},
+		{-1, true},
+		{1234567890, true},
+		{-1234567890, true},
+		{maxValueI + 1, false},  // overflow
+		{-maxValueI - 1, false}, // overflow
+	}
+
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("ValidateInt_%d", tc.value), func(t *testing.T) {
+			if got := ValidateIntRange(tc.value); (got == nil && !tc.expectOK) || (got != nil && tc.expectOK) {
+				t.Errorf("validateIntBounds(%d) = %v, want %v", tc.value, got, tc.expectOK)
+			}
+		})
+	}
+}
+
+func TestValidateFloatRange(t *testing.T) {
+	type testCase struct {
+		value    float64
+		expectOK bool
+	}
+
+	tests := []testCase{
+		{0.0, true},
+		{1.0, true},
+		{-1.0, true},
+		{1234567890.123456789, true},
+		{-1234567890.123456789, true},
+		{maxValueF64 + 1, true},     // overflow but float not precise enough
+		{-maxValueF64 - 1, true},    // overflow but float not precise enough
+		{maxValueF64 + 100, false},  // overflow
+		{-maxValueF64 - 100, false}, // overflow
+	}
+
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("ValidateFloat_%f", tc.value), func(t *testing.T) {
+			if got := ValidateFloatRange(tc.value); (got == nil && !tc.expectOK) || (got != nil && tc.expectOK) {
+				t.Errorf("validateFloatBounds(%f) = %v, want %v", tc.value, got, tc.expectOK)
+			}
+		})
+	}
+}
+
+func TestIsUnderOverNaN(t *testing.T) {
+	type testCase struct {
+		value       string
+		isException bool
+	}
+
+	tests := []testCase{
+		{"0", false},  // zero is not an exception
+		{"1", false},  // normal number
+		{"NaN", true}, // NaN is an exception
+		{"<999999999999999999.999999999999999999999999999999999999", true}, // overflow is an exception
+		{"~1", true}, // underflow is an exception
+	}
+
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("IsUnderOverNan_%s", tc.value), func(t *testing.T) {
+			n, err := FromString(tc.value)
+			if err != nil {
+				t.Fatalf("FromString(%q) failed: %v", tc.value, err)
+			}
+			if got := n.HasOverflow() || n.HasUnderflow() || n.IsNaN(); got != tc.isException {
+				t.Errorf("IsUnderflow/Overflow/NaN(%q) = %v, want %v", n.String(), got, tc.isException)
+			}
+		})
 	}
 }
